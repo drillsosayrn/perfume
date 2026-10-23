@@ -1,0 +1,930 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Esans Defteri</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: laboratuvar terazisi gibi bir üst şerit (rafta esans / bekleyen sipariş / açık alacak),
+   altında sekmeli çalışma alanı. Sayılar mono, başlıklar Bricolage, metin Plex Sans. */
+:root{
+  --bg:#EDF0EC; --surface:#F8FAF7; --sunk:#E2E8E2; --fg:#15261F; --muted:#586A61; --line:#CBD4CD;
+  --accent:#1F4D3F; --on-accent:#F3F8F5; --brass:#A0610C; --ok:#2B7552; --bad:#B03A25;
+  --display:'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1815; --surface:#15231F; --sunk:#1D2F29; --fg:#E4ECE7; --muted:#93A59B; --line:#2B3F38;
+    --accent:#62B697; --on-accent:#07120D; --brass:#E3A650; --ok:#6FC79B; --bad:#F1907A;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1815; --surface:#15231F; --sunk:#1D2F29; --fg:#E4ECE7; --muted:#93A59B; --line:#2B3F38;
+  --accent:#62B697; --on-accent:#07120D; --brass:#E3A650; --ok:#6FC79B; --bad:#F1907A;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--fg); font:15px/1.5 var(--body);
+  padding-block:20px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.wrap{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--display);margin:0;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:1.65rem;line-height:1.1}
+h2{font-size:1.1rem}
+h3{font-size:1rem}
+p{margin:0}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.sub{color:var(--muted);font-size:.9rem;margin-top:2px}
+.chip{font-size:.75rem;padding:3px 9px;border:1px solid var(--line);border-radius:99px;color:var(--muted);background:var(--surface);white-space:nowrap}
+
+.band{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.band>div{padding:14px 14px 12px;min-width:0}
+.band>div+div{border-left:1px solid var(--line)}
+.lbl{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.big{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(1.15rem,4.6vw,1.9rem);line-height:1.2;margin-top:4px;overflow-wrap:anywhere}
+.big small{font-size:.55em;color:var(--muted);margin-left:2px}
+.big.warn{color:var(--bad)}
+
+.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px 9px;cursor:pointer;color:var(--muted);white-space:nowrap;font-weight:500;display:flex;gap:7px;align-items:center}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--brass)}
+.badge{font-family:var(--mono);font-size:.72rem;background:var(--sunk);border-radius:99px;padding:0 7px;min-width:20px;text-align:center;color:var(--fg)}
+.badge.hot{background:var(--bad);color:var(--surface)}
+
+main{display:flex;flex-direction:column;gap:22px;min-width:0}
+section{display:flex;flex-direction:column;gap:10px;min-width:0}
+.sec-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.count{font-family:var(--mono);font-size:.8rem;color:var(--muted);font-weight:400;margin-left:6px}
+.note{font-size:.85rem;color:var(--muted)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;align-items:end}
+.form .wide{grid-column:span 2}
+@media (max-width:420px){.form .wide{grid-column:auto}}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:.78rem;color:var(--muted)}
+input,select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px 10px;min-width:0;width:100%}
+textarea{min-height:110px;resize:vertical;font-family:var(--mono);font-size:.85rem}
+.need{font-size:.85rem;color:var(--muted)}
+.need b{font-family:var(--mono);color:var(--fg);font-weight:500}
+
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:8px 14px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.sm{padding:5px 10px;font-size:.85rem}
+.btn.ghost{background:none;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--bad);border-color:var(--line)}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+
+.pill{display:inline-block;font-size:.72rem;font-weight:600;padding:1px 8px;border-radius:99px;margin-left:8px;vertical-align:1px;white-space:nowrap;
+  background:color-mix(in srgb,var(--tone,var(--muted)) 15%,transparent);color:var(--tone,var(--muted))}
+.pill.bad{--tone:var(--bad)} .pill.ok{--tone:var(--ok)} .pill.low{--tone:var(--brass)} .pill.ex{--tone:var(--muted);font-weight:500}
+
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.list>li{padding:12px 14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;min-width:0}
+.list>li:first-child{border-top:0}
+.line{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.line>.grow{flex:1 1 200px;min-width:0}
+.acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.gin{width:92px;text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.unit{font-family:var(--mono);color:var(--muted);margin-left:4px}
+.inl{display:flex;gap:8px;align-items:end;flex-wrap:wrap;background:var(--sunk);padding:10px;border-radius:4px}
+.inl .field{flex:1 1 110px}
+
+.plan{padding:14px;display:flex;flex-direction:column;gap:10px}
+.figs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0}
+.figs div{background:var(--sunk);border-radius:4px;padding:8px 10px;min-width:0}
+.figs dt{font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.figs dd{margin:2px 0 0;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:1.05rem}
+.figs dd.neg{color:var(--bad)}
+.hint{font-size:.88rem}
+.hint .alt{color:var(--muted);display:block;margin-top:2px}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;cursor:pointer;font-size:inherit}
+:root[data-theme="dark"] .linkbtn{color:var(--accent)}
+
+.pay{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}
+.pay input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);cursor:pointer;padding:0}
+.amt{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:500}
+.amt small{display:block;font-size:.75rem;color:var(--muted);font-weight:400}
+.amt small.late{color:var(--bad);font-weight:500}
+.done .amt,.done strong{color:var(--muted)}
+
+.locchip{font-family:var(--mono);font-weight:500;padding:4px 10px;border-radius:4px;background:var(--sunk);border:1px solid var(--line);white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+#sq{font-size:1.05rem;padding:11px 12px}
+.seg{display:inline-flex}
+.seg .btn{border-radius:0}
+.seg .btn:first-child{border-radius:4px 0 0 4px}
+.seg .btn:last-child{border-radius:0 4px 4px 0;border-left-width:0}
+.seg .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.mh{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.empty{padding:22px 16px;border:1px dashed var(--line);border-radius:6px;color:var(--muted);text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:6px;font-size:.9rem;max-width:min(92vw,520px);z-index:20}
+@media (prefers-reduced-motion:no-preference){.toast{animation:fade .18s ease-out}@keyframes fade{from{opacity:0}to{opacity:1}}}
+</style>
+
+<div id="app"></div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- yardımcılar ---------- */
+const app=document.getElementById('app');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nk=s=>String(s||'').trim().toLocaleLowerCase('tr').replace(/\s+/g,' ');
+const r1=x=>Math.round((x+Number.EPSILON)*10)/10;
+const fmt=x=>r1(x).toLocaleString('tr-TR',{maximumFractionDigits:1});
+const fin=x=>String(r1(x)).replace('.',',');
+const money=x=>(Math.round(x*100)/100).toLocaleString('tr-TR',{maximumFractionDigits:2})+' ₺';
+const num=v=>{const n=parseFloat(String(v==null?'':v).replace(/\s/g,'').replace(',','.'));return isFinite(n)?n:NaN;};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const nowIso=()=>new Date().toISOString();
+const dstr=iso=>new Date(iso).toLocaleDateString('tr-TR',{day:'numeric',month:'short'});
+const dtstr=iso=>new Date(iso).toLocaleString('tr-TR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+const days=iso=>Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/864e5));
+const kid=k=>'b_'+btoa(unescape(encodeURIComponent(k))).replace(/=/g,'');
+
+/* ---------- durum ---------- */
+const KEYS=['essences','ready','orders','log','settings'];
+const DEF_SET={ratio:25,bottle:50,step:5,low:12.5};
+const GL={K:'Kadın',E:'Erkek'};
+let S={essences:[],ready:[],orders:[],log:[],settings:Object.assign({},DEF_SET)};
+let ui={tab:'plan',open:null,loading:true};
+let db=null,dbc=null,dl=null,usr=null,myId=null,dirty=false,storeErr='';
+const names={};
+function resolveNames(){
+  if(!usr)return;
+  const ids=[...new Set(S.log.slice(0,80).map(l=>l.by).filter(Boolean))];
+  if(!ids.length)return;
+  usr.profiles(ids).then(ps=>{
+    let changed=false;
+    ids.forEach(id=>{
+      const p=ps&&ps[id];
+      const v=p&&p.isMe?'Sen':(p&&p.name)||'Başka kullanıcı';
+      if(names[id]!==v){names[id]=v;changed=true;}
+    });
+    if(changed&&ui.tab==='log'&&!typing())render();
+  }).catch(()=>{});
+}
+const LS='esans-defteri-v1';
+try{const t=localStorage.getItem('esans-defteri-tab');if(t)ui.tab=t;}catch(e){}
+
+const per=()=>S.settings.bottle*S.settings.ratio/100;
+const findEss=n=>S.essences.find(e=>nk(e.name)===nk(n));
+function addLog(text){S.log.unshift({id:uid(),t:nowIso(),text,by:myId||''});if(S.log.length>300)S.log.length=300;}
+
+/* ---------- kalıcılık ---------- */
+const chains={};
+function persist(){
+  const keys=[].slice.call(arguments);
+  if(db){
+    keys.forEach(k=>{
+      const val=k==='settings'?{value:S.settings}:{items:S[k]};
+      const body=JSON.parse(JSON.stringify(val));
+      chains[k]=(chains[k]||Promise.resolve()).then(()=>dbc.doc(k).set(body)).then(()=>{if(storeErr){storeErr='';render();}}).catch(e=>{storeErr='Kayıt başarısız: '+((e&&e.code)||'bilinmeyen hata');render();});
+    });
+  }else{
+    try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}
+  }
+}
+function loadLocal(){
+  try{const raw=localStorage.getItem(LS);if(raw){const v=JSON.parse(raw);KEYS.forEach(k=>{if(v[k])S[k]=v[k];});S.settings=Object.assign({},DEF_SET,S.settings);}}catch(e){}
+}
+function applySnap(snap){
+  snap.docs.forEach(d=>{
+    if(KEYS.indexOf(d.id)<0)return;
+    const v=d.data()||{};
+    if(d.id==='settings')S.settings=Object.assign({},DEF_SET,JSON.parse(JSON.stringify(v.value||{})));
+    else S[d.id]=JSON.parse(JSON.stringify(v.items||[]));
+  });
+  ui.loading=false;
+  if(typing())dirty=true;else render();
+}
+function typing(){const a=document.activeElement;return !!(a&&app.contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.type!=='checkbox');}
+document.addEventListener('focusout',()=>{if(dirty){setTimeout(()=>{if(!typing()){dirty=false;render();}},60);}});
+
+/* ---------- hesaplar ---------- */
+function planGroups(){
+  const m=new Map();
+  const reserved={};
+  S.orders.filter(o=>o.status==='bekliyor'&&o.bought).forEach(o=>{const k=nk(o.name);reserved[k]=r1((reserved[k]||0)+o.needG);});
+  S.orders.filter(o=>o.status==='bekliyor'&&!o.bought).forEach(o=>{
+    const k=nk(o.name);
+    if(!m.has(k))m.set(k,{key:k,name:o.name,orders:[],D:0});
+    const g=m.get(k);g.orders.push(o);g.D=r1(g.D+o.needG);
+    g.pack=(g.pack||0)+(o.pack||0);g.cost=(g.cost||0)+(o.cost||0);
+  });
+  const st=S.settings.step;
+  const ceilStep=x=>Math.ceil(r1(x)/st-1e-9)*st;
+  return [...m.values()].map(g=>{
+    const e=findEss(g.name);const stock=e?Math.max(0,r1(e.grams-(reserved[g.key]||0))):0;
+    if(e)g.name=e.name;
+    g.stock=stock;g.known=!!e;
+    g.sh=Math.max(0,r1(g.D-stock));
+    if(g.sh>0){
+      g.buy1=ceilStep(g.sh);
+      g.left1=r1(stock+g.buy1-g.D);
+      g.extra1=Math.floor(g.left1/per()+1e-9);
+      g.buy2=ceilStep(g.sh+per());
+      g.left2=r1(stock+g.buy2-g.D);
+      g.extra2=Math.floor(g.left2/per()+1e-9);
+    }else{
+      g.left0=r1(stock-g.D);
+      g.extra0=Math.floor(g.left0/per()+1e-9);
+    }
+    return g;
+  }).sort((a,b)=>(b.sh>0)-(a.sh>0)||b.sh-a.sh||a.name.localeCompare(b.name,'tr'));
+}
+const unpaid=()=>S.orders.filter(o=>o.status==='yapildi').sort((a,b)=>new Date(a.madeAt)-new Date(b.madeAt));
+
+/* ---------- görünüm ---------- */
+function head(){
+  return `<header class="top"><div><h1>Esans Defteri</h1><p class="sub">Stok, alım planı ve alacak takibi</p></div>
+  <span class="chip">${storeErr?esc(storeErr):db?'Bulutta kayıtlı':'Yalnızca bu tarayıcıda saklanıyor'}</span></header>`;
+}
+function band(){
+  const total=S.essences.reduce((s,e)=>s+e.grams,0);
+  const pend=S.orders.filter(o=>o.status==='bekliyor').length;
+  const up=unpaid();const owed=up.reduce((s,o)=>s+(o.price||0),0);
+  return `<div class="band">
+    <div><div class="lbl">Rafta esans</div><div class="big">${fmt(total)}<small>g</small></div></div>
+    <div><div class="lbl">Bekleyen sipariş</div><div class="big">${pend}</div></div>
+    <div><div class="lbl">Açık alacak</div><div class="big ${up.some(o=>days(o.madeAt)>=30)?'warn':''}">${money(owed)}</div></div>
+  </div>`;
+}
+function tabs(){
+  const pend=S.orders.filter(o=>o.status==='bekliyor').length;
+  const up=unpaid();
+  const T=[['search','Ara',0,false],['plan','Alım planı',pend,false],['essence','Esanslar',S.essences.length,false],['ready','Hazır parfümler',S.ready.length,false],['sales','Satışlar',0,false],['pay','Ödemeler',up.length,up.some(o=>days(o.madeAt)>=30)],['log','Geçmiş',0,false]];
+  return `<nav class="tabs" role="tablist" aria-label="Bölümler">${T.map(t=>`<button class="tab" role="tab" aria-selected="${ui.tab===t[0]}" data-act="tab" data-v="${t[0]}">${t[1]}${t[2]?`<span class="badge ${t[3]?'hot':''}">${t[2]}</span>`:''}</button>`).join('')}</nav>`;
+}
+function delBtn(type,id,label){
+  if(ui.open==='del:'+id)return `<span class="acts"><span class="note">Silinsin mi?</span><button class="btn sm danger" data-act="delyes" data-type="${type}" data-id="${id}">Evet, sil</button><button class="btn sm" data-act="open" data-v="del:${id}">Vazgeç</button></span>`;
+  return `<button class="btn sm ghost" data-act="open" data-v="del:${id}">${label||'Sil'}</button>`;
+}
+function empty(msg,withEx){
+  return `<div class="empty"><p>${msg}</p>${withEx&&!hasAny()?`<button class="btn sm" data-act="examples">Örnek verilerle dene</button>`:''}</div>`;
+}
+const hasAny=()=>S.essences.length||S.ready.length||S.orders.length;
+
+function vPlan(){
+  const groups=planGroups();
+  const pend=S.orders.filter(o=>o.status==='bekliyor').sort((a,b)=>new Date(a.created)-new Date(b.created));
+  const s=S.settings;
+  const dl_=S.essences.slice().sort((a,b)=>a.name.localeCompare(b.name,'tr')).map(e=>`<option value="${esc(e.name)}">`).join('');
+  return `
+  <section>
+    <h2>Yeni sipariş</h2>
+    <form class="panel form" data-form="order" autocomplete="off">
+      <div class="field wide"><label for="of-name">Esans / parfüm</label><input id="of-name" name="esans" list="dl-ess" data-keep placeholder="örn. Aventus tipi" required><datalist id="dl-ess">${dl_}</datalist></div>
+      <div class="field wide"><label for="of-buyer">Alıcı</label><input id="of-buyer" name="alici" data-keep placeholder="Ad" required></div>
+      <div class="field"><label for="of-ml">Miktar (ml)</label><input id="of-ml" name="ml" inputmode="decimal" data-keep value="${s.bottle}" required></div>
+      <div class="field"><label for="of-ratio">Esans oranı (%)</label><input id="of-ratio" name="oran" inputmode="decimal" data-keep value="${s.ratio}" required></div>
+      <div class="field"><label for="of-price">Ücret (₺)</label><input id="of-price" name="ucret" inputmode="decimal" data-keep placeholder="isteğe bağlı"></div>
+      <div class="field"><button class="btn primary" type="submit">Hatırlatıcıya ekle</button></div>
+      <p class="need wide" style="grid-column:1/-1" id="of-need"></p>
+    </form>
+  </section>
+
+  <section>
+    <div class="sec-h"><h2>Alım planı<span class="count">${groups.length?groups.length+' esans':''}</span></h2></div>
+    ${groups.length?`<div class="list">${groups.map(planRow).join('')}</div>`:pend.length?`<p class="note">Alınacak esans kalmadı. Siparişler aşağıda üretilmeyi bekliyor.</p>`:empty('Bekleyen sipariş yok. Yukarıdan bir sipariş ekleyince hangi esanstan kaç gram alman gerektiği burada hesaplanır.',true)}
+  </section>
+
+  <section>
+    <div class="sec-h"><h2>Bekleyen siparişler<span class="count">${pend.length||''}</span></h2></div>
+    ${pend.length?`<ul class="list">${pend.map(orderRow).join('')}</ul>`:`<p class="note">Üretilmeyi bekleyen sipariş yok.</p>`}
+  </section>
+
+  <section>
+    <h2>Karışım ayarları</h2>
+    <div class="panel form">
+      <div class="field"><label for="st-ratio">Varsayılan esans oranı (%)</label><input id="st-ratio" inputmode="decimal" value="${fin(s.ratio)}" data-change="setting" data-k="ratio"></div>
+      <div class="field"><label for="st-bottle">Varsayılan şişe (ml)</label><input id="st-bottle" inputmode="decimal" value="${fin(s.bottle)}" data-change="setting" data-k="bottle"></div>
+      <div class="field"><label for="st-step">Alım adımı (g)</label><input id="st-step" inputmode="decimal" value="${fin(s.step)}" data-change="setting" data-k="step"></div>
+      <div class="field"><label for="st-low">Az esans eşiği (g)</label><input id="st-low" inputmode="decimal" value="${fin(s.low)}" data-change="setting" data-k="low"></div>
+      <p class="note" style="grid-column:1/-1">Bir şişe (${fin(s.bottle)} ml) için ${fin(per())} g esans gerekir. Alım adımı, satıcının satış gramajına göre eksik miktarı yukarı yuvarlar. Eski siparişler kendi oranını korur.</p>
+    </div>
+  </section>`;
+}
+function planRow(g){
+  const bottle=fin(S.settings.bottle);
+  const fig=(l,v,neg)=>`<div><dt>${l}</dt><dd class="${neg?'neg':''}">${v}</dd></div>`;
+  const head=`<div class="line"><h3>${esc(g.name)}${g.sh>0?`<span class="pill bad">Eksik ${fmt(g.sh)} g</span>`:`<span class="pill ok">Stok yeter</span>`}${g.known?'':'<span class="pill ex">stokta kayıtlı değil</span>'}</h3></div>`;
+  const figs=`<dl class="figs">${fig('İstenen',fmt(g.D)+' g · '+g.orders.length+' sipariş')}${fig('Elde',fmt(g.stock)+' g')}${fig(g.sh>0?'Eksik':'Kalan',g.sh>0?fmt(g.sh)+' g':fmt(g.left0)+' g',g.sh>0)}</dl>`;
+  if(g.sh<=0){
+    return `<li class="plan">${head}${figs}<p class="hint">Hepsini üretince ${fmt(g.left0)} g kalır${g.extra0>0?`, bu da ${g.extra0} şişe (${bottle} ml) daha eder`:''}.</p></li>`;
+  }
+  const id=kid(g.key);
+  const lp=r1(g.stock+(g.pack||0)-g.D),pex=Math.floor(Math.max(0,lp)/per()+1e-9);
+  const notes=g.orders.map(o=>o.note).filter(Boolean).join(' | ');
+  const pk=g.pack>0?`<span class="alt">Listendeki paket: ${fmt(g.pack)} g${g.cost>0?' · '+money(g.cost):''}. ${lp<0?`Bu paket yetmez, ${fmt(-lp)} g eksik kalır.`:`Alırsan ${fmt(lp)} g artar${pex>0?`, ${pex} şişe (${bottle} ml) fazladan çıkar`:''}.`}${notes?' '+esc(notes):''}</span>`:'';
+  const alt=g.extra2>g.extra1?`<span class="alt">${fmt(g.buy2)} g alırsan ${g.extra2-g.extra1} şişe daha çıkar (${fmt(g.left2)} g artar). <button class="linkbtn" data-act="fill" data-target="${id}" data-val="${fin(g.buy2)}">Bunu yaz</button></span>`:'';
+  return `<li class="plan">${head}${figs}
+  <p class="hint">Önerilen alım <b class="mono">${fmt(g.buy1)} g</b>. ${g.left1>0?`Elinde ${fmt(g.left1)} g kalır${g.extra1>0?`, ${g.extra1} şişe (${bottle} ml) fazladan çıkar`:''}.`:'Tam yeter.'}${alt}${pk}</p>
+  <div class="inl"><div class="field"><label for="${id}">Satın aldığım miktar (g)</label><input id="${id}" inputmode="decimal" value="${fin(g.pack>0?g.pack:g.buy1)}"></div>
+  <button class="btn primary" data-act="buy" data-key="${esc(g.key)}" data-name="${esc(g.name)}" data-input="${id}">Satın aldım</button></div></li>`;
+}
+function orderRow(o){
+  const e=findEss(o.name);
+  const ok=e&&e.grams>=o.needG;
+  const r=S.ready.find(x=>nk(x.name)===nk(o.name)&&x.qty>0);
+  const open=ui.open==='make:'+o.id;
+  return `<li>
+  <div class="line"><div class="grow"><strong>${esc(o.buyer)}</strong> · ${esc(o.name)}
+    <span class="pill ${ok?'ok':'bad'}">${o.bought?'Esans alındı':ok?'Esans yeter':'Esans yetmiyor'}</span>${r?`<span class="pill low">Hazırda ${r.qty} adet var</span>`:''}
+    <div class="note mono">${fin(o.ml)} ml · %${fin(o.ratio||S.settings.ratio)} · ${fmt(o.needG)} g esans · ${o.price?money(o.price):'ücret yok'} · ${dstr(o.created)}${e&&locText(e)?' · '+esc(locText(e)):''}</div>${o.note?`<div class="note">${esc(o.note)}${o.pack?' · '+fmt(o.pack)+' g paket':''}${o.cost?' · '+money(o.cost):''}</div>`:''}</div>
+  <div class="acts"><button class="btn sm primary" data-act="open" data-v="make:${o.id}">Yaptım</button>${r?`<button class="btn sm" data-act="fromReady" data-id="${o.id}">Hazırdan ver</button>`:''}${delBtn('order',o.id,'İptal et')}</div></div>
+  ${open?`<div class="inl"><div class="field"><label for="mk-used">Kullanılan esans (g)</label><input id="mk-used" data-keep inputmode="decimal" value="${fin(o.needG)}"></div>
+  <div class="field"><label for="mk-price">Ücret (₺)</label><input id="mk-price" data-keep inputmode="decimal" value="${o.price?fin(o.price):''}"></div>
+  <button class="btn primary" data-act="make" data-id="${o.id}">Stoktan düş ve kaydet</button></div>`:''}
+  </li>`;
+}
+
+function places(e){
+  const low=S.settings.low,gt=GL[e.gender]||'',has=!!e.gender;
+  const lab=kind=>kind==='main'?(has?gt+' kutusu':'Cinsiyet seçilmemiş')
+    :kind==='box'?(has?gt+' · ':'')+'Kutu '+e.box
+    :kind==='nobox'?(has?gt+' · ':'')+'kutu no yok'
+    :(has?gt+(e.box?' · Kutu '+e.box:''):'');
+  const mk=(kind,g)=>({kind:kind,g:g,label:lab(kind)});
+  if(e.grams<=0)return [mk('zero',0)];
+  if(e.boxG==null){
+    if(e.grams>=low)return [mk('main',e.grams)];
+    return [mk(e.box?'box':'nobox',e.grams)];
+  }
+  const b=r1(Math.min(Math.max(0,e.boxG),e.grams)),m=r1(e.grams-b),out=[];
+  if(m>0)out.push(mk('main',m));
+  if(b>0)out.push(mk(e.box?'box':'nobox',b));
+  return out.length?out:[mk('main',e.grams)];
+}
+function locText(e){
+  const pl=places(e);
+  if(pl.length===1)return pl[0].label;
+  return pl.map(x=>x.label+' ('+fmt(x.g)+' g)').join(' + ');
+}
+function freezeBox(e){
+  if(e.boxG==null)e.boxG=(e.box&&e.grams>0&&e.grams<S.settings.low)?e.grams:0;
+}
+function takeStock(e,used){
+  if(e.boxG!=null){
+    const b=Math.max(0,Math.min(e.boxG,e.grams)),main=e.grams-b;
+    e.boxG=r1(Math.max(0,b-Math.max(0,used-main)));
+  }
+  e.grams=r1(e.grams-used);
+  if(e.boxG!=null&&e.boxG>e.grams)e.boxG=e.grams;
+}
+function essGroups(){
+  const byName=(a,b)=>a.e.name.localeCompare(b.e.name,'tr');
+  const gl=g=>GL[g]||'Cinsiyet seçilmemiş';
+  const all=[];
+  S.essences.forEach(e=>places(e).forEach(p=>all.push({e:e,p:p})));
+  const G=[];
+  ['K','E',''].forEach(g=>{
+    const items=all.filter(x=>x.p.kind==='main'&&(x.e.gender||'')===g).sort(byName);
+    if(items.length)G.push({title:g?gl(g)+' kutusu (yapılabilir miktarda)':'Cinsiyet seçilmemiş (yapılabilir miktarda)',items:items});
+  });
+  ['K','E',''].forEach(g=>{
+    const items=all.filter(x=>(x.p.kind==='box'||x.p.kind==='nobox')&&(x.e.gender||'')===g);
+    const bx=x=>x.p.kind==='box'?x.e.box:'';
+    const boxes=[...new Set(items.map(bx))].sort((a,b)=>!a?1:!b?-1:a.localeCompare(b,'tr',{numeric:true}));
+    boxes.forEach(b=>G.push({title:gl(g)+' · '+(b?'Kutu '+b:'Kutu no girilmemiş'),items:items.filter(x=>bx(x)===b).sort(byName)}));
+  });
+  const zero=all.filter(x=>x.p.kind==='zero').sort(byName);
+  if(zero.length)G.push({title:'Biten esanslar',items:zero});
+  return G;
+}
+function genOpts(sel){return `<option value=""${!sel?' selected':''}>Seçilmedi</option><option value="K"${sel==='K'?' selected':''}>Kadın</option><option value="E"${sel==='E'?' selected':''}>Erkek</option>`;}
+function vEss(){
+  const list=S.essences;
+  const G=essGroups();
+  return `
+  <section>
+    <h2>Esans ekle</h2>
+    <form class="panel form" data-form="essence" autocomplete="off">
+      <div class="field wide"><label for="ef-name">Esans adı</label><input id="ef-name" name="esans" data-keep required></div>
+      <div class="field"><label for="ef-g">Eldeki miktar (g)</label><input id="ef-g" name="gram" inputmode="decimal" data-keep value="0"></div>
+      <div class="field"><label for="ef-c">Cinsiyet</label><select id="ef-c" name="cins" data-keep>${genOpts('')}</select></div>
+      <div class="field"><label for="ef-b">Kutu no (az kalanlar için)</label><input id="ef-b" name="kutu" data-keep></div>
+      <div class="field"><button class="btn primary" type="submit">Ekle</button></div>
+      <p class="note" style="grid-column:1/-1">${fin(S.settings.low)} g altındaki esanslar numaralı kutularında, üstündekiler kadın veya erkek tek kutusunda sayılır. Numaralı kutuda kalan esansa alım yapınca eski miktar o kutuda kalır, yeni gelen ana kutuya girer. Yerleri “Yer” düğmesinden düzeltebilirsin.</p>
+    </form>
+    <div><button class="btn sm" data-act="open" data-v="bulk">${ui.open==='bulk'?'Toplu eklemeyi kapat':'Excel’den toplu ekle'}</button></div>
+    ${ui.open==='bulk'?`<form class="panel" data-form="bulk" style="display:flex;flex-direction:column;gap:10px">
+      <p class="note">Excel’de sütunları sırayla esans adı, gram, cinsiyet (K veya E), kutu no olacak şekilde seçip kopyala, buraya yapıştır. Cinsiyet ve kutu no boş bırakılabilir. Aynı isimde olanların bilgisi güncellenir.</p>
+      <textarea id="bulk-t" data-keep placeholder="Aventus tipi&#9;18,5&#9;E&#10;Oud Wood tipi&#9;7&#9;K&#9;3"></textarea>
+      <div><button class="btn primary" type="submit">Listeye ekle</button></div></form>`:''}
+  </section>
+  <section>
+    <div class="sec-h"><h2>Stoktaki esanslar<span class="count">${list.length||''}</span></h2>
+      ${list.length>6?`<div class="field" style="width:200px"><input id="q" type="search" placeholder="Ara" aria-label="Esans ara" value="${esc(ui.eq||'')}" data-keep></div>`:''}</div>
+    ${list.length?`<div id="esslist" style="display:flex;flex-direction:column;gap:20px">${G.map(grp=>`<div class="grp" style="display:flex;flex-direction:column;gap:8px"><h3>${esc(grp.title)}<span class="count">${grp.items.length}</span></h3><ul class="list">${grp.items.map(essRow).join('')}</ul></div>`).join('')}</div>`:empty('Henüz esans kaydı yok. Yukarıdan ekle ya da Excel listeni yapıştır.',true)}
+  </section>`;
+}
+function locPanel(e){
+  const bg=e.boxG!=null?fin(Math.min(Math.max(0,e.boxG),e.grams)):'';
+  return ui.open==='loc:'+e.id?`<div class="inl"><div class="field"><label for="lc-g-${e.id}">Cinsiyet</label><select id="lc-g-${e.id}" data-keep>${genOpts(e.gender||'')}</select></div>
+  <div class="field"><label for="lc-b-${e.id}">Kutu no</label><input id="lc-b-${e.id}" data-keep value="${esc(e.box||'')}"></div>
+  <div class="field"><label for="lc-q-${e.id}">Numaralı kutudaki miktar (g)</label><input id="lc-q-${e.id}" data-keep inputmode="decimal" value="${bg}" placeholder="boşsa otomatik"></div>
+  <button class="btn primary" data-act="saveLoc" data-id="${e.id}">Kaydet</button>
+  <p class="note" style="flex-basis:100%">Esansın bir kısmı numaralı kutuda, kalanı ana kutudaysa kutudaki gramı yaz. Toplam stok ${fmt(e.grams)} g.</p></div>`:'';
+}
+function essRow(it){
+  const e=it.e,p=it.p,pl=places(e),split=pl.length>1;
+  if(split&&p.kind!=='main'){
+    return `<li data-n="${esc(nk(e.name+' '+p.label))}">
+    <div class="line"><div class="grow"><strong>${esc(e.name)}</strong><span class="pill low">Kutuda kalan</span><div class="note">Toplam stok ${fmt(e.grams)} g, geri kalanı ${esc(pl[0].label)} içinde</div></div>
+    <div class="acts"><span><input class="gin" inputmode="decimal" value="${fin(p.g)}" data-change="setPart" data-part="box" data-id="${e.id}" aria-label="${esc(e.name)} numaralı kutudaki gram"><span class="unit">g</span></span><button class="btn sm" data-act="open" data-v="loc:${e.id}">Yer</button></div></div>${locPanel(e)}</li>`;
+  }
+  const pill=e.grams<=0?'<span class="pill bad">Bitti</span>':(!split&&e.grams<S.settings.low)?'<span class="pill low">Az kaldı</span>':'';
+  const loc=locText(e);
+  return `<li data-n="${esc(nk(e.name+' '+loc))}">
+  <div class="line"><div class="grow"><strong>${esc(e.name)}</strong>${pill}${e.ex?'<span class="pill ex">örnek</span>':''}${loc?`<div class="note">${esc(loc)}</div>`:''}</div>
+  <div class="acts"><span>${split?`<input class="gin" inputmode="decimal" value="${fin(p.g)}" data-change="setPart" data-part="main" data-id="${e.id}" aria-label="${esc(e.name)} ana kutudaki gram">`:`<input class="gin" inputmode="decimal" value="${fin(e.grams)}" data-change="setG" data-id="${e.id}" aria-label="${esc(e.name)} toplam gram">`}<span class="unit">g</span></span>
+  <button class="btn sm" data-act="open" data-v="add:${e.id}">+ Alım</button><button class="btn sm" data-act="open" data-v="loc:${e.id}">Yer</button>${delBtn('essence',e.id)}</div></div>
+  ${ui.open==='add:'+e.id?`<div class="inl"><div class="field"><label for="pa-${e.id}">Alınan miktar (g)</label><input id="pa-${e.id}" data-keep inputmode="decimal"></div><button class="btn primary" data-act="addStock" data-id="${e.id}">Stoğa ekle</button></div>`:''}
+  ${locPanel(e)}
+  </li>`;
+}
+function saveLoc(id){
+  const e=S.essences.find(x=>x.id===id);if(!e)return;
+  const g=document.getElementById('lc-g-'+id).value,b=document.getElementById('lc-b-'+id).value.trim();
+  const qv=document.getElementById('lc-q-'+id).value.trim();
+  if(qv!==''){const q=num(qv);if(!(q>=0))return toast('Kutudaki miktar için geçerli bir gram yaz.');e.boxG=r1(Math.min(q,e.grams));}
+  else delete e.boxG;
+  e.gender=g;e.box=b;ui.open=null;
+  addLog(`Yer güncellendi: ${e.name}, ${GL[g]||'cinsiyet yok'}${b?', kutu '+b:''}${e.boxG!=null?', kutuda '+fmt(e.boxG)+' g':''}`);
+  persist('essences','log');render(true);toast('Yer kaydedildi.');
+}
+
+function vReady(){
+  const list=S.ready.slice().sort((a,b)=>a.name.localeCompare(b.name,'tr'));
+  return `
+  <section>
+    <h2>Hazır parfüm ekle</h2>
+    <form class="panel form" data-form="ready" autocomplete="off">
+      <div class="field wide"><label for="rf-name">Parfüm adı</label><input id="rf-name" name="parfum" data-keep placeholder="örn. Oud Wood tipi 50 ml" required></div>
+      <div class="field"><label for="rf-q">Adet</label><input id="rf-q" name="adet" inputmode="numeric" data-keep value="1"></div>
+      <div class="field"><button class="btn primary" type="submit">Ekle</button></div>
+    </form>
+    <div><button class="btn sm" data-act="open" data-v="rbulk">${ui.open==='rbulk'?'Toplu eklemeyi kapat':'Excel’den toplu ekle'}</button></div>
+    ${ui.open==='rbulk'?`<form class="panel" data-form="rbulk" style="display:flex;flex-direction:column;gap:10px">
+      <p class="note">Excel’de parfüm adı ve adet sütunlarını seçip kopyala, buraya yapıştır. Aynı isimde olanların adedi güncellenir.</p>
+      <textarea id="rbulk-t" data-keep placeholder="Polo Blue&#9;1&#10;Eros Flame&#9;2"></textarea>
+      <div><button class="btn primary" type="submit">Listeye ekle</button></div></form>`:''}
+  </section>
+  <section>
+    <div class="sec-h"><h2>Hazır stok<span class="count">${list.length||''}</span></h2></div>
+    ${list.length?`<ul class="list">${list.map(readyRow).join('')}</ul>`:empty('Hazır şişelenmiş parfümün yoksa bu liste boş kalır. Fazladan çıkan şişeleri buraya ekleyebilirsin.',false)}
+  </section>`;
+}
+function readyRow(r){
+  const open=ui.open==='sell:'+r.id;
+  return `<li>
+  <div class="line"><div class="grow"><strong>${esc(r.name)}</strong>${r.qty<=0?'<span class="pill bad">Bitti</span>':''}${r.ex?'<span class="pill ex">örnek</span>':''}</div>
+  <div class="acts"><span><input class="gin" style="width:70px" inputmode="numeric" value="${r.qty}" data-change="setQ" data-id="${r.id}" aria-label="${esc(r.name)} adet"><span class="unit">adet</span></span>
+  <button class="btn sm primary" data-act="open" data-v="sell:${r.id}" ${r.qty<=0?'disabled':''}>Sat</button>${delBtn('ready',r.id)}</div></div>
+  ${open?`<div class="inl"><div class="field"><label for="sl-buyer">Alıcı</label><input id="sl-buyer" data-keep></div>
+  <div class="field"><label for="sl-q">Adet</label><input id="sl-q" data-keep inputmode="numeric" value="1"></div>
+  <div class="field"><label for="sl-price">Toplam ücret (₺)</label><input id="sl-price" data-keep inputmode="decimal"></div>
+  <button class="btn primary" data-act="sell" data-id="${r.id}">Satışı kaydet</button></div>`:''}
+  </li>`;
+}
+
+const fold=s=>String(s||'').toLocaleLowerCase('tr').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ı/g,'i').replace(/[^a-z0-9]+/g,' ').trim();
+function hitRow(x){
+  const e=x.e||x,only=x.p||null,all=places(e),pl=only?[only]:all,split=all.length>1;
+  const pill=e.grams<=0?'<span class="pill bad">Bitti</span>':split?(only&&only.kind!=='main'?'<span class="pill low">Kutuda kalan</span>':''):e.grams<S.settings.low?'<span class="pill low">Az kaldı</span>':'';
+  const note=only&&split?`<div class="note">Toplam stok ${fmt(e.grams)} g</div>`:'';
+  const chips=pl.map(p=>`<div class="acts"><span class="locchip">${esc(p.label||'Yer belirtilmemiş')}</span><span class="mono">${fmt(p.g)} g</span></div>`).join('');
+  return `<li><div class="line"><div class="grow"><strong>${esc(e.name)}</strong>${pill}${note}</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${chips}</div></div></li>`;
+}
+function searchResults(){
+  const toks=fold(ui.sq||'').split(' ').filter(Boolean);
+  if(ui.sbox){
+    const g=essGroups().find(x=>x.title===ui.sbox);
+    if(g)return `<div class="mh"><h2>${esc(g.title.replace(' (yapılabilir miktarda)',''))}<span class="count">${g.items.length}</span></h2><button class="btn sm" data-act="sclear">Kapat</button></div><ul class="list">${g.items.map(hitRow).join('')}</ul>`;
+  }
+  if(!toks.length){
+    const G=essGroups();
+    if(!G.length)return empty('Henüz esans kaydı yok. Esanslar sekmesinden ekleyince burada arayabilirsin.',false);
+    return `<h3>Kutulara göz at</h3><div class="chips">${G.map(g=>`<button class="btn sm" data-act="sbox" data-v="${esc(g.title)}">${esc(g.title.replace(' (yapılabilir miktarda)',''))} · ${g.items.length}</button>`).join('')}</div>`;
+  }
+  const has=(txt)=>{const h=fold(txt);return toks.every(t=>h.indexOf(t)>=0);};
+  const pos=e=>{const i=fold(e.name).indexOf(toks[0]);return i<0?999:i;};
+  const hits=S.essences.filter(e=>has(e.name+' '+locText(e))).sort((a,b)=>pos(a)-pos(b)||a.name.localeCompare(b.name,'tr'));
+  const rd=S.ready.filter(r=>has(r.name)).sort((a,b)=>a.name.localeCompare(b.name,'tr'));
+  if(!hits.length&&!rd.length)return empty('Eşleşen kayıt yok. Farklı bir yazımı dene, örneğin markayı ya da esansın bir kelimesini.',false);
+  return `${hits.length?`<h3>Esanslar<span class="count">${hits.length}</span></h3><ul class="list">${hits.slice(0,60).map(hitRow).join('')}</ul>${hits.length>60?'<p class="note">İlk 60 sonuç gösteriliyor. Aramayı daraltabilirsin.</p>':''}`:''}
+  ${rd.length?`<h3>Hazır parfümler<span class="count">${rd.length}</span></h3><ul class="list">${rd.map(r=>`<li><div class="line"><div class="grow"><strong>${esc(r.name)}</strong></div><div class="acts"><span class="locchip">Hazır stok</span><span class="mono">${r.qty} adet</span></div></div></li>`).join('')}</ul>`:''}`;
+}
+function vSearch(){
+  return `<section><h2>Esans ara</h2>
+    <div class="field"><label for="sq">Esans adı, marka, cinsiyet veya kutu no</label><input id="sq" type="search" value="${esc(ui.sq||'')}" placeholder="örn. dylan, tobacco, erkek kutu 3" autocomplete="off"></div>
+  </section><section id="sres">${searchResults()}</section>`;
+}
+function vSales(){
+  const s=S.settings,mode=ui.saleMode||'ready';
+  const sold=S.orders.filter(o=>o.status!=='bekliyor').sort((a,b)=>new Date(b.madeAt)-new Date(a.madeAt));
+  const ym=iso=>{const d=new Date(iso);return d.getFullYear()*12+d.getMonth();};
+  const cur=ym(nowIso());
+  const sum=a=>a.reduce((t,o)=>t+(o.price||0),0);
+  const pend=S.orders.filter(o=>o.status==='bekliyor').length;
+  const readyOpts=S.ready.filter(r=>r.qty>0).map(r=>`<option value="${esc(r.name)}">`).join('');
+  const essOpts=S.essences.map(e=>`<option value="${esc(e.name)}">`).join('');
+  const common=`<div class="field wide"><label for="sf-buyer">Alıcı</label><input id="sf-buyer" name="alici" data-keep required></div>
+      <div class="field"><label for="sf-price">Toplam ücret (₺)</label><input id="sf-price" name="ucret" inputmode="decimal" data-keep></div>
+      <div class="field"><button class="btn primary" type="submit">Satışı kaydet</button></div>`;
+  const form=mode==='ready'
+    ?`<div class="field wide"><label for="sf-name">Hazır parfüm</label><input id="sf-name" name="ad" list="dl-sale" data-keep required><datalist id="dl-sale">${readyOpts}</datalist></div>
+      <div class="field"><label for="sf-q">Adet</label><input id="sf-q" name="adet" inputmode="numeric" data-keep value="1"></div>${common}
+      <p class="note" style="grid-column:1/-1">Hazır stoktan düşer, ödeme takibine açık alacak olarak eklenir.</p>`
+    :`<div class="field wide"><label for="sf-name">Esans / parfüm</label><input id="sf-name" name="ad" list="dl-sale" data-keep required><datalist id="dl-sale">${essOpts}</datalist></div>
+      <div class="field"><label for="sf-ml">Miktar (ml)</label><input id="sf-ml" name="ml" inputmode="decimal" data-keep value="${s.bottle}"></div>
+      <div class="field"><label for="sf-ratio">Esans oranı (%)</label><input id="sf-ratio" name="oran" inputmode="decimal" data-keep value="${s.ratio}"></div>${common}
+      <p class="need" id="sf-need" style="grid-column:1/-1"></p>`;
+  const groups=[];const idx={};
+  sold.forEach(o=>{
+    const lab=new Date(o.madeAt).toLocaleDateString('tr-TR',{month:'long',year:'numeric'});
+    if(!(lab in idx)){idx[lab]=groups.length;groups.push({lab:lab,items:[]});}
+    groups[idx[lab]].items.push(o);
+  });
+  return `
+  <section>
+    <h2>Satış kaydet</h2>
+    <div class="seg" role="group" aria-label="Satış türü">
+      <button class="btn sm" data-act="saleMode" data-v="ready" aria-pressed="${mode==='ready'}">Hazır şişeden</button>
+      <button class="btn sm" data-act="saleMode" data-v="make" aria-pressed="${mode==='make'}">Esanstan yapıp sat</button>
+    </div>
+    <form class="panel form" data-form="sale" autocomplete="off">${form}</form>
+    ${pend?`<p class="note">${pend} bekleyen sipariş Alım planı sekmesinde. “Yaptım” dediğinde buraya satış olarak düşer.</p>`:''}
+  </section>
+  <section>
+    <h2>Satış özeti</h2>
+    <div class="band">
+      <div><div class="lbl">Bu ay</div><div class="big">${money(sum(sold.filter(o=>ym(o.madeAt)===cur)))}</div></div>
+      <div><div class="lbl">Toplam satış</div><div class="big">${money(sum(sold))}</div></div>
+      <div><div class="lbl">Tahsil edilen</div><div class="big">${money(sum(sold.filter(o=>o.status==='odendi')))}</div></div>
+    </div>
+  </section>
+  ${groups.length?groups.map(g=>`<section><div class="mh"><h2>${esc(g.lab)}<span class="count">${g.items.length} satış</span></h2><span class="mono">${money(sum(g.items))}</span></div>
+    <ul class="list">${g.items.map(saleRow).join('')}</ul></section>`).join(''):`<section><h2>Satışlar</h2>${empty('Henüz satış yok. Yukarıdan bir satış kaydet ya da bekleyen siparişi “Yaptım” ile tamamla.',false)}</section>`}`;
+}
+function saleRow(o){
+  const paid=o.status==='odendi',d=days(o.madeAt);
+  const what=o.kind==='hazir'?`${o.qty||1} adet hazır parfüm`:`${fin(o.ml||0)} ml · ${fmt(o.usedG||0)} g esans`;
+  const st=paid?`ödendi ${dstr(o.paidAt)}`:`ödeme bekliyor, ${d===0?'bugün':d+' gün'}`;
+  return `<li><div class="line"><div class="grow"><strong>${esc(o.buyer)}</strong> · ${esc(o.name)}<div class="note">${what} · ${dstr(o.madeAt)}</div></div>
+  <div class="amt">${o.price?money(o.price):'—'}<small class="${!paid&&d>=30?'late':''}">${st}</small></div></div></li>`;
+}
+function payRow(o,done){
+  const d=days(o.madeAt),late=!done&&d>=30;
+  const what=o.kind==='hazir'?`${o.qty||1} adet hazır parfüm`:`${fin(o.ml)} ml · ${fmt(o.usedG||0)} g esans`;
+  return `<li class="pay ${done?'done':''}">
+  <input type="checkbox" ${done?'checked':''} data-change="paid" data-id="${o.id}" aria-label="${esc(o.buyer)} ödemesi geldi">
+  <div style="min-width:0"><strong>${esc(o.buyer)}</strong> · ${esc(o.name)}<div class="note">${what} · ${dstr(o.madeAt)}${done?' · ödendi '+dstr(o.paidAt):''}</div></div>
+  <div class="amt">${o.price?money(o.price):'—'}<small class="${late?'late':''}">${done?'':d===0?'bugün':d+' gün'+(late?' geçti':'')}</small></div></li>`;
+}
+function vPay(){
+  const up=unpaid();
+  const paid=S.orders.filter(o=>o.status==='odendi').sort((a,b)=>new Date(b.paidAt)-new Date(a.paidAt)).slice(0,25);
+  const owed=up.reduce((s,o)=>s+(o.price||0),0);
+  return `
+  <section>
+    <div class="sec-h"><h2>Ödeme bekleyenler<span class="count">${up.length||''}</span></h2>${up.length?`<span class="mono">${money(owed)} toplam</span>`:''}</div>
+    ${up.length?`<ul class="list">${up.map(o=>payRow(o,false)).join('')}</ul><p class="note">Parayı aldığında kutuyu işaretle. İşaretleyene kadar kayıt açık kalır.</p>`:empty('Ödeme bekleyen kayıt yok. Bir siparişi “Yaptım” ya da “Sat” ile kapattığında burada açık alacak olarak görünür.',false)}
+  </section>
+  ${paid.length?`<section><h2>Ödenenler<span class="count">son ${paid.length}</span></h2><ul class="list">${paid.map(o=>payRow(o,true)).join('')}</ul><p class="note">Yanlışlıkla işaretlediysen kutuyu kaldır, kayıt tekrar açılır.</p></section>`:''}`;
+}
+
+function vLog(){
+  const hasEx=[S.essences,S.ready,S.orders].some(a=>a.some(x=>x.ex));
+  return `
+  <section>
+    <h2>Veri</h2>
+    <div class="acts">
+      ${dl?`<button class="btn" data-act="export">Excel için dışa aktar (CSV)</button>`:''}
+      ${hasEx?`<button class="btn" data-act="clearEx">Örnek verileri temizle</button>`:''}
+      ${!hasAny()?`<button class="btn" data-act="examples">Örnek verilerle dene</button>`:''}
+    </div>
+    ${dl?'':`<p class="note">Dışa aktarma bu görünümde kullanılamıyor.</p>`}
+  </section>
+  <section>
+    <h2>Son hareketler<span class="count">${S.log.length||''}</span></h2>
+    ${S.log.length?`<ul class="list">${(resolveNames(),'')}${S.log.slice(0,80).map(l=>`<li><div class="line"><span>${esc(l.text)}${l.by&&names[l.by]?`<span class="pill ex">${esc(names[l.by])}</span>`:''}</span><span class="note mono">${dtstr(l.t)}</span></div></li>`).join('')}</ul>`:empty('Alım, üretim, satış ve düzeltmeler burada sırayla görünür.',false)}
+  </section>`;
+}
+
+function view(){
+  if(ui.loading)return `<div class="wrap">${head()}<p class="empty">Veriler yükleniyor…</p></div>`;
+  const body={search:vSearch,plan:vPlan,essence:vEss,ready:vReady,sales:vSales,pay:vPay,log:vLog}[ui.tab]||vPlan;
+  return `<div class="wrap">${head()}${band()}${tabs()}<main>${body()}</main></div>`;
+}
+
+function render(reset){
+  const keep={};
+  if(!reset)app.querySelectorAll('[data-keep][id]').forEach(el=>{keep[el.id]=el.value;});
+  const fid=!reset&&document.activeElement&&app.contains(document.activeElement)?document.activeElement.id:'';
+  app.innerHTML=view();
+  Object.keys(keep).forEach(id=>{const el=document.getElementById(id);if(el)el.value=keep[id];});
+  if(fid){const el=document.getElementById(fid);if(el&&el.focus)el.focus();}
+  updNeed();filterEss();
+}
+let toastT;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true;},3600);}
+function updNeed(){
+  const el=document.getElementById('of-need')||document.getElementById('sf-need');if(!el)return;
+  const p=el.id==='of-need'?'of':'sf';
+  const ml=num(document.getElementById(p+'-ml').value),ra=num(document.getElementById(p+'-ratio').value);
+  el.innerHTML=ml>0&&ra>0?`Gerekli esans: <b>${fmt(ml*ra/100)} g</b> (${fmt(ml)} ml içinde %${fmt(ra)}). Kalan ${fmt(ml-ml*ra/100)} g alkol.`:'';
+}
+function filterEss(){
+  const q=document.getElementById('q');const list=document.getElementById('esslist');
+  if(!list)return;const toks=q?fold(q.value).split(' ').filter(Boolean):[];
+  list.querySelectorAll('li').forEach(li=>{const h=fold(li.dataset.n||'');li.hidden=toks.length>0&&!toks.every(t=>h.indexOf(t)>=0);});
+  list.querySelectorAll('.grp').forEach(gp=>{gp.hidden=![].some.call(gp.querySelectorAll('li'),li=>!li.hidden);});
+}
+
+/* ---------- işlemler ---------- */
+function buy(key,val,name){
+  const g=num(val);if(!(g>0))return toast('Satın alınan gramı yaz.');
+  let e=findEss(name);if(!e){e={id:uid(),name:name,grams:0};S.essences.push(e);}
+  freezeBox(e);
+  e.grams=r1(e.grams+g);
+  let n=0;
+  S.orders.forEach(o=>{if(o.status==='bekliyor'&&!o.bought&&nk(o.name)===key){o.bought=true;o.boughtAt=nowIso();n++;}});
+  addLog(`Alım: ${e.name} +${fmt(g)} g, stok ${fmt(e.grams)} g${n?', '+n+' sipariş alım planından çıktı':''}`);
+  persist('essences','orders','log');render();toast(`${e.name}: stok ${fmt(e.grams)} g oldu${n?', alım planından çıktı':''}.`);
+}
+function addStock(id){
+  const e=S.essences.find(x=>x.id===id);const g=num((document.getElementById('pa-'+id)||{}).value);
+  if(!e||!(g>0))return toast('Alınan gramı yaz.');
+  freezeBox(e);e.grams=r1(e.grams+g);ui.open=null;
+  addLog(`Alım: ${e.name} +${fmt(g)} g, stok ${fmt(e.grams)} g`);
+  persist('essences','log');render(true);toast(`${e.name}: stok ${fmt(e.grams)} g oldu.`);
+}
+function makeOrder(id){
+  const o=S.orders.find(x=>x.id===id);if(!o)return;
+  const used=num(document.getElementById('mk-used').value),price=num(document.getElementById('mk-price').value);
+  if(!(used>=0))return toast('Kullanılan esans gramını yaz.');
+  const e=findEss(o.name);let extra='';
+  if(e){if(used>e.grams){extra=' (stok yetmedi, 0 g’a çekildi)';e.grams=0;if(e.boxG!=null)e.boxG=0;}else takeStock(e,used);}
+  else if(used>0)extra=' (bu esans stokta kayıtlı değildi)';
+  o.status='yapildi';o.madeAt=nowIso();o.usedG=used;if(isFinite(price))o.price=price;
+  ui.open=null;
+  addLog(`Üretildi: ${o.buyer} · ${o.name}, ${fmt(used)} g esans düşüldü${e?', kalan '+fmt(e.grams)+' g':''}${extra}`);
+  persist('orders','essences','log');render(true);toast(extra?'Kaydedildi'+extra:'Kaydedildi, ödeme takibine eklendi.');
+}
+function fromReady(id){
+  const o=S.orders.find(x=>x.id===id);if(!o)return;
+  const r=S.ready.find(x=>nk(x.name)===nk(o.name)&&x.qty>0);if(!r)return toast('Hazır stokta yok.');
+  r.qty-=1;o.kind='hazir';o.qty=1;o.status='yapildi';o.madeAt=nowIso();o.usedG=0;
+  addLog(`Hazırdan verildi: ${o.buyer} · ${r.name}, hazır stok ${r.qty} adet`);
+  persist('orders','ready','log');render(true);toast('Hazır stoktan düşüldü, ödeme takibine eklendi.');
+}
+function sell(id){
+  const r=S.ready.find(x=>x.id===id);if(!r)return;
+  const buyer=document.getElementById('sl-buyer').value.trim(),q=Math.round(num(document.getElementById('sl-q').value)),price=num(document.getElementById('sl-price').value);
+  if(!buyer)return toast('Alıcı adını yaz.');
+  if(!(q>0)||q>r.qty)return toast(`Adet 1 ile ${r.qty} arasında olmalı.`);
+  r.qty-=q;
+  S.orders.push({id:uid(),kind:'hazir',name:r.name,buyer:buyer,qty:q,price:isFinite(price)?price:0,status:'yapildi',created:nowIso(),madeAt:nowIso(),usedG:0});
+  ui.open=null;
+  addLog(`Satıldı: ${buyer} · ${r.name} × ${q}, hazır stok ${r.qty} adet`);
+  persist('orders','ready','log');render(true);toast('Satış kaydedildi, ödeme takibine eklendi.');
+}
+function setPaid(id,on){
+  const o=S.orders.find(x=>x.id===id);if(!o)return;
+  o.status=on?'odendi':'yapildi';if(on)o.paidAt=nowIso();else delete o.paidAt;
+  addLog(on?`Ödeme geldi: ${o.buyer} · ${o.name}${o.price?', '+money(o.price):''}`:`Ödeme işareti kaldırıldı: ${o.buyer} · ${o.name}`);
+  persist('orders','log');render();
+}
+function del(type,id){
+  const m={essence:'essences',ready:'ready',order:'orders'}[type];
+  const it=S[m].find(x=>x.id===id);if(!it)return;
+  S[m]=S[m].filter(x=>x.id!==id);ui.open=null;
+  addLog(`Silindi: ${it.name}${it.buyer?' ('+it.buyer+')':''}`);
+  persist(m,'log');render(true);
+}
+function formSubmit(kind,f){
+  const v=n=>(f.elements[n]?f.elements[n].value:'');
+  if(kind==='order'){
+    const name=v('esans').trim(),buyer=v('alici').trim(),ml=num(v('ml')),ra=num(v('oran')),pr=num(v('ucret'));
+    if(!name||!buyer||!(ml>0)||!(ra>0&&ra<=100))return toast('Esans, alıcı, ml ve oran (1-100) gerekli.');
+    const needG=r1(ml*ra/100);
+    const e=findEss(name);
+    S.orders.push({id:uid(),kind:'yeni',name:e?e.name:name,buyer:buyer,ml:ml,ratio:ra,needG:needG,price:isFinite(pr)?pr:0,status:'bekliyor',created:nowIso()});
+    addLog(`Sipariş: ${buyer} · ${name}, ${fmt(ml)} ml (${fmt(needG)} g esans)`);
+    persist('orders','log');render(true);toast('Sipariş eklendi, alım planı güncellendi.');
+  }else if(kind==='essence'){
+    const name=v('esans').trim(),g=num(v('gram'));
+    if(!name)return toast('Esans adını yaz.');
+    if(findEss(name))return toast('Bu esans zaten listede. Alım için satırdaki “+ Alım” düğmesini kullan.');
+    S.essences.push({id:uid(),name:name,grams:isFinite(g)&&g>0?r1(g):0,gender:v('cins'),box:v('kutu').trim()});
+    addLog(`Esans eklendi: ${name}, ${fmt(isFinite(g)&&g>0?g:0)} g`);
+    persist('essences','log');render(true);toast('Esans eklendi.');
+  }else if(kind==='bulk'){
+    const lines=document.getElementById('bulk-t').value.split(/\r?\n/);let add=0,upd=0,skip=0;
+    lines.forEach(line=>{
+      line=line.trim();if(!line)return;
+      const parts=line.split(/\t|;/).map(s=>s.trim());
+      let name,g,gen='',box='';
+      if(parts.length>=2){
+        name=parts[0];g=num(parts[1]);if(!isFinite(g))g=num(parts[parts.length-1]);
+        if(parts[2]){const t=nk(parts[2]);gen=/^(k|kad|f)/.test(t)?'K':/^(e|erk|m)/.test(t)?'E':'';}
+        if(parts[3])box=parts[3];
+      }
+      else{const m=line.match(/^(.*?)[\s,]+([\d.,]+)\s*(g|gr|gram)?$/i);if(m){name=m[1].trim();g=num(m[2]);}else{name=line;g=0;}}
+      if(!name||!isFinite(g)||g<0){skip++;return;}
+      const e=findEss(name);
+      if(e){e.grams=r1(g);if(gen)e.gender=gen;if(box)e.box=box;upd++;}else{S.essences.push({id:uid(),name:name,grams:r1(g),gender:gen,box:box});add++;}
+    });
+    if(!add&&!upd)return toast('Okunabilir satır bulunamadı. Her satır “ad, gram” biçiminde olmalı.');
+    addLog(`Toplu ekleme: ${add} yeni, ${upd} güncellendi${skip?', '+skip+' satır atlandı':''}`);
+    ui.open=null;persist('essences','log');render(true);toast(`${add} yeni, ${upd} güncellendi${skip?', '+skip+' satır atlandı':''}.`);
+  }else if(kind==='sale'){
+    const mode=ui.saleMode||'ready';
+    const buyer=v('alici').trim(),pr=num(v('ucret')),price=isFinite(pr)?pr:0;
+    const name=v('ad').trim();
+    if(!name||!buyer)return toast('Parfüm ve alıcı adını yaz.');
+    if(mode==='ready'){
+      const q=Math.round(num(v('adet')));
+      const r=S.ready.find(x=>nk(x.name)===nk(name));
+      if(!r)return toast('Bu isimde hazır parfüm yok. Listeden seç ya da “Esanstan yapıp sat”ı kullan.');
+      if(!(q>0)||q>r.qty)return toast(`Adet 1 ile ${r.qty} arasında olmalı.`);
+      r.qty-=q;
+      S.orders.push({id:uid(),kind:'hazir',name:r.name,buyer:buyer,qty:q,price:price,status:'yapildi',created:nowIso(),madeAt:nowIso(),usedG:0});
+      addLog(`Satıldı: ${buyer} · ${r.name} × ${q}, hazır stok ${r.qty} adet`);
+      persist('orders','ready','log');
+    }else{
+      const ml=num(v('ml')),ra=num(v('oran'));
+      if(!(ml>0)||!(ra>0&&ra<=100))return toast('ml ve oran (1-100) gerekli.');
+      const needG=r1(ml*ra/100),e=findEss(name);let extra='';
+      if(e){if(needG>e.grams){extra=' (stok yetmedi, 0 g’a çekildi)';e.grams=0;if(e.boxG!=null)e.boxG=0;}else takeStock(e,needG);}
+      else extra=' (bu esans stokta kayıtlı değildi)';
+      S.orders.push({id:uid(),kind:'yeni',name:e?e.name:name,buyer:buyer,ml:ml,ratio:ra,needG:needG,usedG:needG,price:price,status:'yapildi',created:nowIso(),madeAt:nowIso()});
+      addLog(`Satıldı: ${buyer} · ${name}, ${fmt(ml)} ml, ${fmt(needG)} g esans düşüldü${extra}`);
+      persist('orders','essences','log');
+    }
+    render(true);toast('Satış kaydedildi, ödeme takibine eklendi.');
+  }else if(kind==='rbulk'){
+    let add=0,upd=0,skip=0;
+    document.getElementById('rbulk-t').value.split(/\r?\n/).forEach(line=>{
+      line=line.trim();if(!line)return;
+      const parts=line.split(/\t|;/).map(s=>s.trim());
+      const name=parts[0];let q=parts.length>1?Math.round(num(parts[1])):1;
+      if(!name){skip++;return;}
+      if(!isFinite(q)||q<0)q=1;
+      const r=S.ready.find(x=>nk(x.name)===nk(name));
+      if(r){r.qty=q;upd++;}else{S.ready.push({id:uid(),name:name,qty:q});add++;}
+    });
+    if(!add&&!upd)return toast('Okunabilir satır bulunamadı. Her satır “ad, adet” biçiminde olmalı.');
+    addLog(`Hazır stok toplu ekleme: ${add} yeni, ${upd} güncellendi${skip?', '+skip+' satır atlandı':''}`);
+    ui.open=null;persist('ready','log');render(true);toast(`${add} yeni, ${upd} güncellendi.`);
+  }else if(kind==='ready'){
+    const name=v('parfum').trim(),q=Math.round(num(v('adet')));
+    if(!name)return toast('Parfüm adını yaz.');
+    const ex=S.ready.find(r=>nk(r.name)===nk(name));
+    if(ex)ex.qty+=(q>0?q:0);else S.ready.push({id:uid(),name:name,qty:q>0?q:0});
+    addLog(`Hazır stok: ${name} +${q>0?q:0} adet`);
+    persist('ready','log');render(true);toast('Hazır stok güncellendi.');
+  }
+}
+function changed(kind,t){
+  if(kind==='setG'){
+    const e=S.essences.find(x=>x.id===t.dataset.id);const g=num(t.value);
+    if(!e)return;if(!(g>=0)){t.value=fin(e.grams);return toast('Geçerli bir gram yaz.');}
+    if(r1(g)===r1(e.grams))return;
+    addLog(`Elle düzeltme: ${e.name} ${fmt(e.grams)} g → ${fmt(g)} g`);
+    e.grams=r1(g);if(e.boxG!=null&&e.boxG>e.grams)e.boxG=e.grams;persist('essences','log');render();
+  }else if(kind==='setPart'){
+    const e=S.essences.find(x=>x.id===t.dataset.id);if(!e)return;
+    const part=t.dataset.part,v=num(t.value),pl=places(e);
+    const curMain=r1(pl.filter(x=>x.kind==='main').reduce((a,x)=>a+x.g,0));
+    const curBox=r1(pl.filter(x=>x.kind==='box'||x.kind==='nobox').reduce((a,x)=>a+x.g,0));
+    const cur=part==='main'?curMain:curBox;
+    if(!(v>=0)){t.value=fin(cur);return toast('Geçerli bir gram yaz.');}
+    if(r1(v)===cur)return;
+    const old=e.grams;
+    if(part==='main'){e.boxG=curBox;e.grams=r1(v+curBox);}
+    else{e.boxG=r1(v);e.grams=r1(curMain+v);}
+    addLog(`Elle düzeltme: ${e.name} ${part==='main'?'ana kutu':'numaralı kutu'} ${fmt(cur)} g → ${fmt(r1(v))} g, toplam ${fmt(old)} → ${fmt(e.grams)} g`);
+    persist('essences','log');render();
+  }else if(kind==='setQ'){
+    const r=S.ready.find(x=>x.id===t.dataset.id);const q=Math.round(num(t.value));
+    if(!r)return;if(!(q>=0)){t.value=r.qty;return toast('Geçerli bir adet yaz.');}
+    if(q===r.qty)return;
+    addLog(`Elle düzeltme: ${r.name} ${r.qty} → ${q} adet`);
+    r.qty=q;persist('ready','log');render();
+  }else if(kind==='paid'){
+    setPaid(t.dataset.id,t.checked);
+  }else if(kind==='setting'){
+    const k=t.dataset.k,v=num(t.value);
+    const ok=k==='ratio'?(v>0&&v<=100):v>0;
+    if(!ok){t.value=fin(S.settings[k]);return toast('Geçerli bir değer yaz.');}
+    S.settings[k]=v;persist('settings');render();
+  }
+}
+
+/* örnek veri */
+function examples(){
+  const d=n=>new Date(Date.now()-n*864e5).toISOString();
+  const E=(name,g,gender,box)=>({id:uid(),name:name,grams:g,gender:gender,box:box||'',ex:true});
+  S.essences.push(E('Baccarat Rouge tipi',3,'K','2'),E('Tobacco Vanille tipi',0,'E'),E('Sauvage tipi',30,'E'),E('Aventus tipi',18.5,'E'),E('Oud Wood tipi',7,'K','1'));
+  S.ready.push({id:uid(),name:'Oud Wood tipi 50 ml',qty:2,ex:true});
+  const O=(o)=>S.orders.push(Object.assign({id:uid(),kind:'yeni',ex:true,ratio:25},o));
+  O({name:'Baccarat Rouge tipi',buyer:'Ayşe',ml:50,needG:12.5,price:650,status:'bekliyor',created:d(1)});
+  O({name:'Aventus tipi',buyer:'Mehmet',ml:100,needG:25,price:1200,status:'bekliyor',created:d(2)});
+  O({name:'Oud Wood tipi',buyer:'Selin',ml:50,needG:12.5,price:650,status:'bekliyor',created:d(0)});
+  O({name:'Sauvage tipi',buyer:'Zeynep',ml:50,needG:12.5,usedG:12.5,price:600,status:'yapildi',created:d(63),madeAt:d(62)});
+  O({name:'Tobacco Vanille tipi',buyer:'Can',ml:50,needG:12.5,usedG:12.5,price:700,status:'yapildi',created:d(9),madeAt:d(8)});
+  addLog('Örnek veriler yüklendi');
+  persist('essences','ready','orders','log');render(true);toast('Örnek veriler yüklendi. Gerçek verine geçerken “Geçmiş” sekmesinden temizle.');
+}
+function clearEx(){
+  ['essences','ready','orders'].forEach(k=>{S[k]=S[k].filter(x=>!x.ex);});
+  if(!hasAny())S.log=[];else addLog('Örnek veriler temizlendi');
+  persist('essences','ready','orders','log');render(true);toast('Örnek veriler temizlendi.');
+}
+function exportCsv(){
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const c=v=>typeof v==='number'?String(v).replace('.',','):q(v);
+  const row=a=>a.map(c).join(';');
+  const L=[row(['ESANSLAR']),row(['Esans','Gram','Cinsiyet','Kutu'])];
+  S.essences.forEach(e=>L.push(row([e.name,e.grams,GL[e.gender]||'',e.box||''])));
+  L.push('',row(['HAZIR PARFÜMLER']),row(['Parfüm','Adet']));
+  S.ready.forEach(r=>L.push(row([r.name,r.qty])));
+  L.push('',row(['SİPARİŞLER']),row(['Alıcı','Parfüm','ml / adet','Esans g','Ücret','Durum','Tarih','Yapıldığı gün','Ödeme günü']));
+  const st={bekliyor:'Bekliyor',yapildi:'Ödeme bekliyor',odendi:'Ödendi'};
+  const D=x=>x?new Date(x).toLocaleDateString('tr-TR'):'';
+  S.orders.forEach(o=>L.push(row([o.buyer,o.name,o.kind==='hazir'?(o.qty||1):(o.ml||0),o.usedG!=null&&o.status!=='bekliyor'?o.usedG:(o.needG||0),o.price||0,st[o.status]||o.status,D(o.created),D(o.madeAt),D(o.paidAt)])));
+  const day=new Date().toISOString().slice(0,10);
+  dl.save({filename:'esans-defteri-'+day+'.csv',data:'﻿'+L.join('\r\n')}).then(()=>toast('Dosya kaydedildi.')).catch(e=>{if(!e||e.code!=='declined')toast('Dosya kaydedilemedi.');});
+}
+
+/* ---------- olaylar ---------- */
+app.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
+  const d=b.dataset;
+  switch(d.act){
+    case 'tab':ui.tab=d.v;ui.open=null;try{localStorage.setItem('esans-defteri-tab',d.v);}catch(_){}render();if(d.v==='search'){const sq=document.getElementById('sq');if(sq)sq.focus();}break;
+    case 'open':ui.open=ui.open===d.v?null:d.v;render();break;
+    case 'fill':{const el=document.getElementById(d.target);if(el)el.value=d.val;break;}
+    case 'buy':buy(d.key,(document.getElementById(d.input)||{}).value,d.name);break;
+    case 'addStock':addStock(d.id);break;
+    case 'saveLoc':saveLoc(d.id);break;
+    case 'saleMode':ui.saleMode=d.v;render();break;
+    case 'sbox':ui.sbox=d.v;ui.sq='';render();break;
+    case 'sclear':ui.sbox=null;render();break;
+    case 'make':makeOrder(d.id);break;
+    case 'fromReady':fromReady(d.id);break;
+    case 'sell':sell(d.id);break;
+    case 'delyes':del(d.type,d.id);break;
+    case 'examples':examples();break;
+    case 'clearEx':clearEx();break;
+    case 'export':if(dl)exportCsv();break;
+  }
+});
+app.addEventListener('submit',e=>{e.preventDefault();formSubmit(e.target.dataset.form,e.target);});
+app.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.change)changed(t.dataset.change,t);});
+app.addEventListener('input',e=>{
+  const id=e.target.id;
+  if(id==='of-ml'||id==='of-ratio'||id==='sf-ml'||id==='sf-ratio')updNeed();
+  if(id==='q'){ui.eq=e.target.value;filterEss();}
+  if(id==='sq'){ui.sq=e.target.value;ui.sbox=null;const r=document.getElementById('sres');if(r)r.innerHTML=searchResults();}
+});
+
+/* ---------- açılış ---------- */
+render();
+(async function(){
+  try{
+    const c=window.claude;
+    if(c&&c.use){
+      db=await c.use('db');
+      dl=await c.use('downloads');
+      try{usr=await c.use('user');if(usr)myId=await usr.id();}catch(_){usr=null;}
+    }
+  }catch(e){db=null;}
+  if(db){
+    dbc=db.collection('app');
+    dbc.onSnapshot(applySnap,err=>{storeErr='Bağlantı hatası: '+((err&&err.code)||'bilinmeyen');ui.loading=false;render();});
+  }else{
+    loadLocal();ui.loading=false;render();
+  }
+})();
+})();
+</script>
+
+</body></html>
